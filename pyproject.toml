@@ -51,7 +51,13 @@ line_length = 88
 [tool.ruff]
 line-length = 88
 target-version = "py312"
-select = ["E", "F", "B", "I", "N", "UP", "PL", "RUF"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "W"]
+ignore = []
+
+[tool.ruff.lint.isort]
+known-first-party = ["src"]
 
 [tool.mypy]
 python_version = "3.12"
