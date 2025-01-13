@@ -1,6 +1,6 @@
-from typing import Any
+from typing import Any, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class FunctionParameter(BaseModel):
@@ -20,15 +20,14 @@ class FunctionMetadata(BaseModel):
 
 
 class AgentRequest(BaseModel):
-    """Agent 요청"""
+    """에이전트 요청 모델"""
 
-    input: str | bytes
+    input: str = Field(..., min_length=1, max_length=4096)
+    functions: Optional[list[str]] = None
     streaming: bool = False
-    functions: list[str] | None = None
 
 
 class AgentResponse(BaseModel):
-    """Agent 응답"""
+    """에이전트 응답 모델"""
 
     result: Any
-    error: str | None = None

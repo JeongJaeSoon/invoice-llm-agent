@@ -5,7 +5,22 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from src.agent.functions.base import AgentFunction
 from src.services.llm.openai import OpenAIService
+
+
+class MockFunction(AgentFunction):
+    """테스트용 Mock 함수"""
+
+    name = "test_function"
+    description = "테스트 함수입니다."
+    parameters = {
+        "type": "object",
+        "properties": {"param": {"type": "string", "description": "테스트 파라미터"}},
+    }
+
+    async def execute(self, **kwargs: Any) -> Any:
+        return kwargs
 
 
 def create_mock_client(response: Any) -> MagicMock:
@@ -29,7 +44,9 @@ def openai_service() -> Generator[OpenAIService, None, None]:
 
 
 @pytest.mark.asyncio
-async def test_generate_simple_response(openai_service: OpenAIService) -> None:
+async def test_generate_simple_response(
+    openai_service: OpenAIService,
+) -> None:
     """단순 텍스트 생성 테스트"""
     # Mock 응답 설정
     mock_msg = MagicMock(content="테스트 응답", function_call=None)
@@ -48,7 +65,41 @@ async def test_generate_simple_response(openai_service: OpenAIService) -> None:
 
 
 @pytest.mark.asyncio
-async def test_generate_streaming_response(openai_service: OpenAIService) -> None:
+async def test_generate_with_function_call(
+    openai_service: OpenAIService,
+) -> None:
+    """Function Calling 테스트"""
+    # Mock 함수 생성
+    mock_function = MockFunction()
+
+    # Mock 응답 설정
+    mock_function_call = MagicMock()
+    mock_function_call.name = "test_function"
+    mock_function_call.arguments = '{"param": "test_value"}'
+
+    mock_msg = MagicMock(content=None, function_call=mock_function_call)
+    mock_response = MagicMock()
+    mock_response.choices = [MagicMock(message=mock_msg)]
+
+    openai_service.client = create_mock_client(mock_response)
+
+    # 테스트 실행
+    response = await openai_service.generate(
+        "테스트 프롬프트",
+        functions=[mock_function],
+    )
+
+    # 검증
+    assert isinstance(response, dict)
+    assert response["content"] == ""
+    assert response["function_call"].name == "test_function"
+    assert response["function_call"].arguments == '{"param": "test_value"}'
+
+
+@pytest.mark.asyncio
+async def test_generate_streaming_response(
+    openai_service: OpenAIService,
+) -> None:
     """스트리밍 응답 테스트"""
     # Mock 스트림 청크 생성
     mock_delta1 = MagicMock(content="청크 1", function_call=None)
