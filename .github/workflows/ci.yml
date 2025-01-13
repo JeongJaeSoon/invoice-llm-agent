@@ -10,30 +10,16 @@ jobs:
   setup:
     runs-on: ubuntu-latest
     outputs:
-      cache-key: ${{ steps.cache.outputs.cache-key }}
+      cache-key: ${{ steps.setup.outputs.cache-key }}
     steps:
       - uses: actions/checkout@v4
 
-      - uses: ./.github/actions/setup-python-poetry
-
-      - name: Cache Poetry virtualenv
-        uses: actions/cache@v3
-        id: cache
+      - name: Setup Python and Poetry
+        id: setup
+        uses: ./.github/actions/setup-python-poetry
         with:
-          path: |
-            .venv
-            ~/.local
-          key: poetry-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
-          restore-keys: |
-            poetry-${{ runner.os }}-
-
-      - name: Set cache key
-        id: cache-key
-        run: echo "cache-key=poetry-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}" >> $GITHUB_OUTPUT
-
-      - name: Install dependencies
-        if: steps.cache.outputs.cache-hit != 'true'
-        run: poetry install --no-interaction
+          python-version: "3.12"
+          restore-only: "false"
 
   lint:
     needs: setup
@@ -41,17 +27,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Restore cache
-        uses: actions/cache/restore@v3
+      - name: Setup Python and Poetry
+        uses: ./.github/actions/setup-python-poetry
         with:
-          path: |
-            .venv
-            ~/.local
-          key: ${{ needs.setup.outputs.cache-key }}
-          fail-on-cache-miss: true
-
-      - name: Add Poetry to PATH
-        run: echo "$HOME/.local/bin" >> $GITHUB_PATH
+          python-version: "3.12"
+          cache-key: ${{ needs.setup.outputs.cache-key }}
+          restore-only: "true"
 
       - name: Run linting
         run: |
@@ -68,17 +49,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Restore cache
-        uses: actions/cache/restore@v3
+      - name: Setup Python and Poetry
+        uses: ./.github/actions/setup-python-poetry
         with:
-          path: |
-            .venv
-            ~/.local
-          key: ${{ needs.setup.outputs.cache-key }}
-          fail-on-cache-miss: true
-
-      - name: Add Poetry to PATH
-        run: echo "$HOME/.local/bin" >> $GITHUB_PATH
+          python-version: "3.12"
+          cache-key: ${{ needs.setup.outputs.cache-key }}
+          restore-only: "true"
 
       - name: Run tests
         run: poetry run pytest tests/ --cov=src --cov-report=xml
@@ -88,9 +64,3 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage.xml
-
-      - name: Upload test results to Codecov
-        if: ${{ !cancelled() }}
-        uses: codecov/test-results-action@v1
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
