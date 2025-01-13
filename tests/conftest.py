@@ -1,5 +1,6 @@
 """공통 테스트 Fixture"""
 
+import os
 from typing import Any, AsyncGenerator, Generator
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -63,3 +64,9 @@ def mock_function_registry() -> Generator[MagicMock, None, None]:
         registry.get_function = MagicMock(return_value=MockFunction())
         mock.load_functions.return_value = registry
         yield registry
+
+
+@pytest.fixture(autouse=True)
+def setup_test_env():
+    # 테스트용 더미 API 키 설정
+    os.environ["OPENAI_API_KEY"] = "test_dummy_key"
