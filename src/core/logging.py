@@ -1,5 +1,5 @@
 import logging
-from typing import Any
+from typing import Any, Callable, Mapping, MutableMapping
 
 import structlog
 
@@ -13,7 +13,12 @@ def setup_logging() -> None:
     log_level = getattr(logging, settings.log_level.upper())
 
     # structlog 프로세서 설정
-    processors = [
+    processors: list[
+        Callable[
+            [Any, str, MutableMapping[str, Any]],
+            Mapping[str, Any] | str | bytes | bytearray | tuple[Any, ...],
+        ]
+    ] = [
         structlog.contextvars.merge_contextvars,
         structlog.processors.add_log_level,
         structlog.processors.TimeStamper(fmt="iso"),
@@ -36,6 +41,8 @@ def setup_logging() -> None:
     )
 
 
-def get_logger(name: str) -> Any:
+def get_logger(name: str) -> structlog.BoundLogger:
     """구조화된 로거 인스턴스 반환"""
-    return structlog.get_logger(name)
+    logger = structlog.get_logger(name)
+    assert isinstance(logger, structlog.BoundLogger)
+    return logger

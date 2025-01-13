@@ -1,6 +1,8 @@
 from typing import Any, AsyncIterator
 
 from openai import AsyncOpenAI
+from openai.types.chat import ChatCompletionMessageParam
+from openai.types.chat.chat_completion import ChatCompletion
 from structlog import get_logger
 
 from src.agent.functions.base import AgentFunction
@@ -13,7 +15,7 @@ logger = get_logger(__name__)
 class OpenAIService(LLMService):
     """OpenAI API 서비스"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.client = AsyncOpenAI(api_key=settings.openai_api_key)
         self.model = settings.openai_model
         self.max_tokens = settings.openai_max_tokens
@@ -24,26 +26,35 @@ class OpenAIService(LLMService):
         functions: list[AgentFunction] | None = None,
         streaming: bool = False,
     ) -> dict[str, Any] | AsyncIterator[dict[str, Any]]:
-        """OpenAI API를 사용하여 응답 생성"""
         try:
             if streaming:
                 return self._generate_stream(prompt, functions)
 
-            messages = [{"role": "user", "content": prompt}]
-            function_definitions = (
-                [func.to_dict() for func in functions] if functions else None
+            messages: list[ChatCompletionMessageParam] = [
+                {"role": "user", "content": prompt}
+            ]
+
+            params: dict[str, Any] = {
+                "model": self.model,
+                "messages": messages,
+                "max_tokens": self.max_tokens,
+            }
+
+            if functions:
+                tools = [
+                    {"type": "function", "function": func.to_dict()}
+                    for func in functions
+                ]
+                params["tools"] = tools
+
+            completion: ChatCompletion = await self.client.chat.completions.create(
+                **params
             )
 
-            response = await self.client.chat.completions.create(
-                model=self.model,
-                messages=messages,
-                functions=function_definitions,
-                max_tokens=self.max_tokens,
-            )
-
+            message = completion.choices[0].message
             return {
-                "content": response.choices[0].message.content,
-                "function_call": response.choices[0].message.function_call,
+                "content": message.content or "",
+                "function_call": message.function_call,
             }
 
         except Exception as e:
@@ -53,28 +64,32 @@ class OpenAIService(LLMService):
     async def _generate_stream(
         self, prompt: str, functions: list[AgentFunction] | None = None
     ) -> AsyncIterator[dict[str, Any]]:
-        """스트리밍 응답 생성"""
-        messages = [{"role": "user", "content": prompt}]
-        function_definitions = (
-            [func.to_dict() for func in functions] if functions else None
-        )
+        messages: list[ChatCompletionMessageParam] = [
+            {"role": "user", "content": prompt}
+        ]
+
+        params: dict[str, Any] = {
+            "model": self.model,
+            "messages": messages,
+            "max_tokens": self.max_tokens,
+            "stream": True,
+        }
+
+        if functions:
+            tools = [
+                {"type": "function", "function": func.to_dict()} for func in functions
+            ]
+            params["tools"] = tools
 
         try:
-            stream = await self.client.chat.completions.create(
-                model=self.model,
-                messages=messages,
-                functions=function_definitions,
-                max_tokens=self.max_tokens,
-                stream=True,
-            )
+            stream = await self.client.chat.completions.create(**params)
 
             async for chunk in stream:
-                if chunk.choices[0].delta.content:
-                    content = chunk.choices[0].delta.content
-                    yield {"content": content}
-                elif chunk.choices[0].delta.function_call:
-                    func_call = chunk.choices[0].delta.function_call
-                    yield {"function_call": func_call}
+                delta = chunk.choices[0].delta
+                if delta.content:
+                    yield {"content": delta.content}
+                elif delta.function_call:
+                    yield {"function_call": delta.function_call}
 
         except Exception as e:
             logger.error("OpenAI 스트리밍 API 호출 실패", error=str(e))

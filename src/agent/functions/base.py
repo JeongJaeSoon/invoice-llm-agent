@@ -12,7 +12,7 @@ class AgentFunction(ABC):
     parameters: dict[str, Any]
 
     @abstractmethod
-    async def execute(self, **kwargs) -> Any:
+    async def execute(self, **kwargs: Any) -> Any:
         """함수 실행 로직"""
         pass
 
