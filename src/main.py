@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from src.api.system.router import mount_metrics
 from src.api.system.router import router as system_router
+from src.api.v1.router import router as v1_router
 from src.core.config import settings
 from src.core.logging import setup_logging
 
@@ -31,6 +32,8 @@ app.add_middleware(
 # 시스템 라우터 등록
 app.include_router(system_router)
 
+# API 라우터 등록
+app.include_router(v1_router, prefix=settings.api_prefix)
 
 # Prometheus 메트릭 마운트
 mount_metrics(app)
