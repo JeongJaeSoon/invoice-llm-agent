@@ -1,7 +1,9 @@
 {
     "editor.formatOnSave": true,
     "editor.codeActionsOnSave": {
-        "source.organizeImports": "explicit"
+        "source.organizeImports": "explicit",
+        "source.fixAll.ruff": "explicit",
+        "source.organizeImports.ruff": "explicit"
     },
     "files.trimTrailingWhitespace": true,
     "files.trimFinalNewlines": true,
@@ -15,7 +17,10 @@
     },
     "isort.args": ["--profile", "black"],
     "black-formatter.args": ["--line-length", "88"],
-    "ruff.organizeImports": false,
+    "ruff.enable": true,
+    "ruff.organizeImports": true,
+    "ruff.fixAll": true,
+    "ruff.lint.run": "onType",
     "rest-client.environmentVariables": {
         "$shared": {
             "version": "v1"
