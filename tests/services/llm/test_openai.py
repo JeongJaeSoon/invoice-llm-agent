@@ -6,7 +6,7 @@ from src.services.llm.openai import OpenAIService
 
 
 @pytest.fixture
-def openai_service():
+def openai_service(mock_settings):
     with patch("src.services.llm.openai.AsyncOpenAI") as mock_client:
         service = OpenAIService()
         service.client = mock_client

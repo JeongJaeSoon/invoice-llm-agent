@@ -8,7 +8,7 @@ class Settings(BaseSettings):
 
     # 기본 설정
     debug: bool = False
-    environment: Literal["development", "production"] = "development"
+    environment: Literal["development", "production", "test"] = "development"
     log_level: str = "INFO"
 
     # API 설정
@@ -25,7 +25,10 @@ class Settings(BaseSettings):
     internal_api_key: str
 
     model_config = SettingsConfigDict(
-        env_file=".env", env_file_encoding="utf-8", case_sensitive=False
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=False,
+        env_prefix="APP_",
     )
 
 
