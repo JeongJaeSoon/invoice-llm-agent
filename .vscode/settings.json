@@ -3,6 +3,9 @@
     "editor.codeActionsOnSave": {
         "source.organizeImports": "explicit"
     },
+    "files.trimTrailingWhitespace": true,
+    "files.trimFinalNewlines": true,
+    "files.insertFinalNewline": true,
     "[python]": {
         "editor.defaultFormatter": "ms-python.black-formatter",
         "editor.formatOnSave": true,
@@ -12,5 +15,22 @@
     },
     "isort.args": ["--profile", "black"],
     "black-formatter.args": ["--line-length", "88"],
-    "ruff.organizeImports": false
+    "ruff.organizeImports": false,
+    "rest-client.environmentVariables": {
+        "$shared": {
+            "version": "v1"
+        },
+        "local": {
+            "host": "http://localhost:8000",
+            "api-prefix": "/api/v1"
+        },
+        "development": {
+            "host": "https://dev-api.example.com",
+            "api-prefix": "/api/v1"
+        },
+        "production": {
+            "host": "https://api.example.com",
+            "api-prefix": "/api/v1"
+        }
+    }
 }

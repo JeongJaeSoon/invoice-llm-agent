@@ -1,0 +1,8 @@
+# @name health
+GET {{host}}/health
+Accept: application/json
+
+### 메트릭 조회
+# @name metrics
+GET {{host}}/metrics
+Accept: text/plain

@@ -1,0 +1,20 @@
+### 일반 채팅
+# @name chat
+POST {{host}}{{api-prefix}}/agent/chat
+Content-Type: application/json
+
+{
+    "input": "안녕하세요, 저는 AI 어시스턴트입니다.",
+    "streaming": false
+}
+
+### 스트리밍 채팅
+# @name chatStream
+POST {{host}}{{api-prefix}}/agent/chat/stream
+Content-Type: application/json
+Accept: text/event-stream
+
+{
+    "input": "안녕하세요, 저는 AI 어시스턴트입니다.",
+    "streaming": true
+}
