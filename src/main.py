@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from src.api.system.router import mount_metrics
 from src.api.system.router import router as system_router
+from src.api.v1.exceptions import register_exception_handlers
 from src.api.v1.router import router as v1_router
 from src.core.config import settings
 from src.core.logging import setup_logging
@@ -37,3 +38,6 @@ app.include_router(v1_router, prefix=settings.api_prefix)
 
 # Prometheus 메트릭 마운트
 mount_metrics(app)
+
+# 예외 핸들러 등록
+register_exception_handlers(app)
