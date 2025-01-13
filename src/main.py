@@ -1,7 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from prometheus_client import make_asgi_app
 
+from src.api.system.router import mount_metrics
+from src.api.system.router import router as system_router
+from src.api.v1.router import router as v1_router
 from src.core.config import settings
 from src.core.logging import setup_logging
 
@@ -27,11 +29,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Prometheus 메트릭 추가
-metrics_app = make_asgi_app()
-app.mount("/metrics", metrics_app)
+# 시스템 라우터 등록
+app.include_router(system_router)
 
+# API 라우터 등록
+app.include_router(v1_router, prefix=settings.api_prefix)
 
-@app.get("/health")
-async def health_check():
-    return {"status": "healthy"}
+# Prometheus 메트릭 마운트
+mount_metrics(app)
