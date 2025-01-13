@@ -37,11 +37,14 @@ jobs:
 
       - name: Install dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-        run: poetry install --no-interaction --no-root
+        run: poetry install --no-interaction
+
+      - name: Install project
+        run: poetry install --no-interaction
 
       - name: Run tests
         run: |
-          poetry run pytest tests/ --cov=src --cov-report=xml
+          poetry run pytest tests/ --cov=src --cov-report=xml -v
 
       - name: Run linting
         run: |
