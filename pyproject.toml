@@ -83,3 +83,10 @@ disallow_untyped_defs = false
 [tool.pytest.ini_options]
 asyncio_mode = "strict"
 asyncio_default_fixture_loop_scope = "function"
+markers = [
+    "unit: 단위 테스트",
+    "integration: 통합 테스트",
+    "e2e: E2E 테스트",
+    "slow: 느린 테스트",
+    "llm: LLM 관련 테스트"
+]

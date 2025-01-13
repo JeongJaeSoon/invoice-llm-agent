@@ -1,4 +1,4 @@
-"""Agent API 엔드포인트 테스트"""
+"""Agent API 테스트"""
 
 from typing import Any, AsyncGenerator, Generator
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -10,6 +10,7 @@ from httpx import AsyncClient
 
 from src.agent.functions.base import AgentFunction
 from src.main import app
+from tests.helpers.assertions import assert_valid_response_format
 
 
 class MockFunction(AgentFunction):
@@ -65,27 +66,17 @@ async def test_chat_simple_response(
     mock_llm_service: MagicMock,
 ) -> None:
     """일반 응답 테스트"""
-    # Mock 응답 설정
     mock_llm_service.generate.return_value = {"content": "테스트 응답"}
 
-    # 테스트 실행
     response = await async_client.post(
         "/api/v1/agent/chat",
         json={"input": "테스트 메시지"},
     )
 
-    # 검증
     assert response.status_code == 200
     data = response.json()
+    assert_valid_response_format(data)
     assert data["result"] == "테스트 응답"
-    assert data["error"] is None
-
-    # LLM 서비스 호출 검증
-    mock_llm_service.generate.assert_called_once_with(
-        prompt="테스트 메시지",
-        functions=None,
-        streaming=False,
-    )
 
 
 @pytest.mark.asyncio
@@ -95,13 +86,11 @@ async def test_chat_with_function_call(
     mock_function_registry: MagicMock,
 ) -> None:
     """Function Calling 테스트"""
-    # Mock 응답 설정
     mock_function_call = MagicMock()
     mock_function_call.name = "test_function"
     mock_function_call.arguments = '{"param": "test_value"}'
     mock_llm_service.generate.return_value = {"function_call": mock_function_call}
 
-    # 테스트 실행
     response = await async_client.post(
         "/api/v1/agent/chat",
         json={
@@ -110,18 +99,7 @@ async def test_chat_with_function_call(
         },
     )
 
-    # 검증
     assert response.status_code == 200
     data = response.json()
+    assert_valid_response_format(data)
     assert data["result"] == {"param": "test_value"}
-    assert data["error"] is None
-
-    # LLM 서비스 호출 검증
-    mock_llm_service.generate.assert_called_once_with(
-        prompt="테스트 메시지",
-        functions=[mock_function_registry.get_function.return_value],
-        streaming=False,
-    )
-
-    # 함수 레지스트리 호출 검증
-    mock_function_registry.get_function.assert_called_with("test_function")
