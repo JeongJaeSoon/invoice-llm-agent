@@ -33,7 +33,7 @@ def test_client() -> Generator[TestClient, None, None]:
 
 
 @pytest.fixture
-async def async_client() -> AsyncGenerator[AsyncClient, None]:
+async def async_client() -> AsyncClient:
     """비동기 테스트 클라이언트 fixture"""
     async with AsyncClient(app=app, base_url="http://test") as client:
         yield client
@@ -61,7 +61,7 @@ def mock_function_registry() -> Generator[MagicMock, None, None]:
 
 @pytest.mark.asyncio
 async def test_chat_simple_response(
-    async_client: AsyncGenerator[AsyncClient, None],
+    async_client: AsyncClient,
     mock_llm_service: MagicMock,
 ) -> None:
     """일반 채팅 응답 테스트"""
@@ -72,8 +72,7 @@ async def test_chat_simple_response(
     }
 
     # 테스트 실행
-    client = await anext(async_client)
-    response = await client.post(
+    response = await async_client.post(
         "/api/v1/agent/chat",
         json={"input": "테스트 메시지"},
     )
@@ -94,7 +93,7 @@ async def test_chat_simple_response(
 
 @pytest.mark.asyncio
 async def test_chat_with_function_call(
-    async_client: AsyncGenerator[AsyncClient, None],
+    async_client: AsyncClient,
     mock_llm_service: MagicMock,
     mock_function_registry: MagicMock,
 ) -> None:
@@ -110,8 +109,7 @@ async def test_chat_with_function_call(
     }
 
     # 테스트 실행
-    client = await anext(async_client)
-    response = await client.post(
+    response = await async_client.post(
         "/api/v1/agent/chat",
         json={
             "input": "테스트 메시지",
@@ -145,7 +143,7 @@ async def mock_stream() -> AsyncGenerator[dict[str, Any], None]:
 
 @pytest.mark.asyncio
 async def test_chat_stream_response(
-    async_client: AsyncGenerator[AsyncClient, None],
+    async_client: AsyncClient,
     mock_llm_service: MagicMock,
 ) -> None:
     """스트리밍 응답 테스트"""
@@ -153,26 +151,25 @@ async def test_chat_stream_response(
     mock_llm_service.generate.return_value = mock_stream()
 
     # 테스트 실행
-    client = await anext(async_client)
-    response = await client.post(
+    async with async_client.stream(
+        "POST",
         "/api/v1/agent/chat/stream",
         json={"input": "테스트 메시지", "streaming": True},
-    )
+    ) as response:
+        # 검증
+        assert response.status_code == 200
+        assert response.headers["content-type"].startswith("text/event-stream")
 
-    # 검증
-    assert response.status_code == 200
-    assert response.headers["content-type"].startswith("text/event-stream")
+        # 스트림 데이터 읽기
+        chunks = []
+        async for line in response.aiter_lines():
+            if line.startswith("data: "):
+                chunks.append(line[6:])
 
-    # 스트림 데이터 읽기
-    chunks = []
-    async for line in response.aiter_lines():
-        if line.startswith("data: "):
-            chunks.append(line[6:])
-
-    assert len(chunks) == 3
-    assert chunks[0] == "청크 1"
-    assert chunks[1] == "청크 2"
-    assert chunks[2] == "청크 3"
+        assert len(chunks) == 3
+        assert chunks[0] == "청크 1"
+        assert chunks[1] == "청크 2"
+        assert chunks[2] == "청크 3"
 
     # LLM 서비스 호출 검증
     mock_llm_service.generate.assert_called_once_with(
