@@ -1,3 +1,5 @@
+"""Agent API 라우터"""
+
 import json
 from typing import AsyncIterator, Final
 
@@ -69,7 +71,7 @@ async def chat(
                 function_name = response["function_call"].name
                 function = registry.get_function(function_name)
                 args = json.loads(response["function_call"].arguments)
-                result = await function.execute(**args)
+                result = await function(**args)
                 return AgentResponse(result=result)
             except Exception as e:
                 logger.error(
@@ -127,7 +129,7 @@ async def chat_stream(
                             function_name = chunk["function_call"].name
                             function = registry.get_function(function_name)
                             args = json.loads(chunk["function_call"].arguments)
-                            result = await function.execute(**args)
+                            result = await function(**args)
                             yield {"data": str(result)}
                         except Exception as e:
                             logger.error(
