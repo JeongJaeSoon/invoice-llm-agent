@@ -71,13 +71,14 @@ curl http://localhost:8000/health
 
 ## 모니터링
 
-### Prometheus 메트릭
+### Prometheus 및 Grafana 사용
 
-Docker Compose로 실행 시 Prometheus가 자동으로 구성됩니다. 다음과 같은 주요 메트릭을 수집하고 모니터링합니다:
+Docker Compose로 실행 시 Prometheus와 Grafana가 자동으로 구성됩니다. 이를 통해 다양한 메트릭을 수집하고 시각화할 수 있습니다.
 
-#### 접근 방법
+#### Redis 접근 방법
 
 - Prometheus UI: <http://localhost:9090>
+- Grafana UI: <http://localhost:3000>
 - 메트릭 엔드포인트: <http://localhost:8000/metrics>
 
 #### 수집되는 주요 메트릭
@@ -95,6 +96,10 @@ Docker Compose로 실행 시 Prometheus가 자동으로 구성됩니다. 다음�
 3. **LLM 사용량 관련**
    - `llm_token_usage_total`: LLM 토큰 사용량 (모델별, 타입별)
    - `llm_token_cost_total`: LLM 토큰 사용 비용 (USD)
+
+#### Grafana 대시보드 설정
+
+Grafana를 통해 수집된 메트릭을 시각화할 수 있습니다. 기본 대시보드는 `deployment/docker/grafana/provisioning/dashboards/llm-agent.json` 파일에 정의되어 있습니다.
 
 #### 모니터링 대시보드 예시
 
@@ -204,6 +209,35 @@ Docker Compose로 실행 시 Prometheus가 자동으로 구성됩니다. 다음�
    - 요청 타입별 사용 패턴 분석
    - 성공/실패율 트렌드 파악
    - 비용 대비 효율성 분석
+
+## Redis 사용 (구현 중)
+
+### Redis 설정
+
+Redis는 `agent_memory` 기능을 위해 사용됩니다. Docker Compose로 실행 시 Redis가 자동으로 구성됩니다.
+
+#### 접근 방법
+
+- Redis: <http://localhost:6379>
+
+#### Redis 설정 예시
+
+```yaml
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+volumes:
+  redis_data:
+```
+
+### Redis를 이용한 메모리 기능
+
+`agent_memory` 기능은 Redis를 사용하여 상태를 저장하고 관리합니다. 이를 통해 에이전트의 상태를 유지하고, 요청 간의 데이터를 공유할 수 있습니다.
 
 ## Development Tools
 
