@@ -23,12 +23,24 @@ class MockFunction(AgentFunction):
         return kwargs
 
 
+def create_mock_usage(
+    prompt_tokens: int, completion_tokens: int, total_tokens: int
+) -> MagicMock:
+    """Mock usage 생성"""
+    return MagicMock(
+        prompt_tokens=prompt_tokens,
+        completion_tokens=completion_tokens,
+        total_tokens=total_tokens,
+    )
+
+
 def create_mock_client(response: Any) -> MagicMock:
     """Mock OpenAI 클라이언트 생성"""
     mock = MagicMock()
     mock.chat = MagicMock()
     mock.chat.completions = MagicMock()
     mock.chat.completions.create = AsyncMock(return_value=response)
+    mock.usage = create_mock_usage(10, 5, 15)
     return mock
 
 
@@ -52,6 +64,7 @@ async def test_generate_simple_response(
     mock_msg = MagicMock(content="테스트 응답", function_call=None)
     mock_response = MagicMock()
     mock_response.choices = [MagicMock(message=mock_msg)]
+    mock_response.usage = create_mock_usage(10, 5, 15)
 
     openai_service.client = create_mock_client(mock_response)
 
@@ -80,6 +93,7 @@ async def test_generate_with_function_call(
     mock_msg = MagicMock(content=None, function_call=mock_function_call)
     mock_response = MagicMock()
     mock_response.choices = [MagicMock(message=mock_msg)]
+    mock_response.usage = create_mock_usage(10, 5, 15)
 
     openai_service.client = create_mock_client(mock_response)
 
@@ -116,7 +130,7 @@ async def test_generate_streaming_response(
     openai_service.client = create_mock_client(mock_stream())
 
     # 테스트 실행
-    responses = []
+    responses: list[dict[str, Any]] = []
     result = await openai_service.generate("테스트 프롬프트", streaming=True)
     assert isinstance(result, AsyncIterator)
     async for response in result:

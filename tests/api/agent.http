@@ -1,4 +1,4 @@
-### 일반 채팅
+### 일반 채팅 : 기본 사용
 # @name chat
 POST {{host}}{{api-prefix}}/agent/chat
 Content-Type: application/json
@@ -8,7 +8,18 @@ Content-Type: application/json
     "streaming": false
 }
 
-### 스트리밍 채팅
+### 일반 채팅 : Agent 함수 호출
+# @name agent-function
+POST {{host}}{{api-prefix}}/agent/chat
+Content-Type: application/json
+
+{
+    "input": "2 + 3 * 4를 계산해줘",
+    "streaming": false
+}
+
+
+### 스트리밍 채팅 : 기본 사용
 # @name chatStream
 POST {{host}}{{api-prefix}}/agent/chat/stream
 Content-Type: application/json
@@ -16,5 +27,16 @@ Accept: text/event-stream
 
 {
     "input": "안녕하세요, 저는 AI 어시스턴트입니다.",
+    "streaming": true
+}
+
+### 스트리밍 채팅 : Agent 함수 호출
+# @name agent-function-stream
+POST {{host}}{{api-prefix}}/agent/chat/stream
+Content-Type: application/json
+Accept: text/event-stream
+
+{
+    "input": "10 * 5는 얼마인가요?",
     "streaming": true
 }

@@ -1,5 +1,5 @@
 services:
-  agent:
+  app:
     build:
       context: ../..
       dockerfile: deployment/docker/Dockerfile
@@ -7,13 +7,52 @@ services:
       - "8000:8000"
     env_file:
       - ../../.env
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - PROMETHEUS_MULTIPROC_DIR=/tmp
     volumes:
-      - ../..:/app
+      - ../../src:/app/src
+      - ../../pyproject.toml:/app/pyproject.toml
+      - ../../README.md:/app/README.md
     command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
+    depends_on:
+      - redis
+      - prometheus
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
 
   prometheus:
-    image: prom/prometheus
+    image: prom/prometheus:latest
     ports:
       - "9090:9090"
     volumes:
       - ./prometheus:/etc/prometheus
+      - prometheus_data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.console.libraries=/usr/share/prometheus/console_libraries"
+      - "--web.console.templates=/usr/share/prometheus/consoles"
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    environment:
+      - GF_PROVISIONING_PATH=/etc/grafana/provisioning
+    depends_on:
+      - prometheus
+
+volumes:
+  redis_data:
+  prometheus_data:
+  grafana_data:

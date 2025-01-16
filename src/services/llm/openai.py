@@ -1,3 +1,6 @@
+"""OpenAI API 서비스"""
+
+import time
 from typing import Any, AsyncIterator
 
 from openai import AsyncOpenAI
@@ -7,6 +10,12 @@ from structlog import get_logger
 
 from src.agent.functions.base import AgentFunction
 from src.core.config import settings
+from src.core.metrics import (
+    LLM_API_ERRORS,
+    LLM_API_LATENCY,
+    LLM_API_REQUESTS,
+    LLM_TOKEN_USAGE,
+)
 from src.services.llm.base import LLMService
 
 logger = get_logger(__name__)
@@ -30,6 +39,9 @@ class OpenAIService(LLMService):
             if streaming:
                 return self._generate_stream(prompt, functions)
 
+            start_time = time.time()
+            LLM_API_REQUESTS.labels(model=self.model).inc()
+
             messages: list[ChatCompletionMessageParam] = [
                 {"role": "user", "content": prompt}
             ]
@@ -51,6 +63,19 @@ class OpenAIService(LLMService):
                 **params
             )
 
+            # 토큰 사용량 메트릭 수집
+            if completion.usage:
+                LLM_TOKEN_USAGE.labels(model=self.model, usage_type="prompt").inc(
+                    completion.usage.prompt_tokens
+                )
+                LLM_TOKEN_USAGE.labels(model=self.model, usage_type="completion").inc(
+                    completion.usage.completion_tokens
+                )
+
+            # 응답 시간 메트릭 수집
+            duration = time.time() - start_time
+            LLM_API_LATENCY.labels(model=self.model).observe(duration)
+
             message = completion.choices[0].message
             return {
                 "content": message.content or "",
@@ -59,6 +84,10 @@ class OpenAIService(LLMService):
 
         except Exception as e:
             logger.error("OpenAI API 호출 실패", error=str(e))
+            LLM_API_ERRORS.labels(
+                model=self.model,
+                error_type=type(e).__name__,
+            ).inc()
             raise
 
     async def _generate_stream(
@@ -82,6 +111,9 @@ class OpenAIService(LLMService):
             params["tools"] = tools
 
         try:
+            start_time = time.time()
+            LLM_API_REQUESTS.labels(model=self.model).inc()
+
             stream = await self.client.chat.completions.create(**params)
 
             async for chunk in stream:
@@ -91,6 +123,14 @@ class OpenAIService(LLMService):
                 elif delta.function_call:
                     yield {"function_call": delta.function_call}
 
+            # 응답 시간 메트릭 수집
+            duration = time.time() - start_time
+            LLM_API_LATENCY.labels(model=self.model).observe(duration)
+
         except Exception as e:
             logger.error("OpenAI 스트리밍 API 호출 실패", error=str(e))
+            LLM_API_ERRORS.labels(
+                model=self.model,
+                error_type=type(e).__name__,
+            ).inc()
             raise

@@ -30,6 +30,10 @@ class Settings(BaseSettings):
     internal_api_url: Optional[str] = None
     internal_api_key: Optional[str] = None
 
+    # Redis 설정
+    redis_host: Optional[str] = None
+    redis_port: Optional[int] = None
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
@@ -47,6 +51,10 @@ class Settings(BaseSettings):
                 missing_fields.append("INTERNAL_API_URL")
             if not self.internal_api_key:
                 missing_fields.append("INTERNAL_API_KEY")
+            if not self.redis_host:
+                missing_fields.append("REDIS_HOST")
+            if not self.redis_port:
+                missing_fields.append("REDIS_PORT")
 
             if missing_fields:
                 fields = ", ".join(missing_fields)
